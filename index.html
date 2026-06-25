@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>現場情報共有（自動送信版）– 渡部造園</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f2efe9;--surface:#fff;--border:#d6d0c8;--text:#1a1814;--muted:#7a7268;
+  --accent:#2e5c30;--line:#06c755;--danger:#c0392b;--info:#1a56d8;
+  --sans:'Noto Sans JP',sans-serif;--r:10px;--tap:52px;
+}
+html,body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;-webkit-text-size-adjust:100%;}
+
+/* header */
+header{position:sticky;top:0;z-index:100;background:var(--accent);color:#fff;padding:env(safe-area-inset-top,0) 0 0;}
+.header-inner{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 0;}
+header h1{font-size:1rem;font-weight:700;letter-spacing:.04em;}
+header small{font-size:.68rem;opacity:.65;}
+.tabs{display:flex;margin-top:8px;}
+.tab-btn{flex:1;font-family:var(--sans);font-size:.8rem;font-weight:600;color:rgba(255,255,255,.55);background:none;border:none;padding:11px 0 10px;cursor:pointer;border-bottom:2.5px solid transparent;-webkit-tap-highlight-color:transparent;}
+.tab-btn.active{color:#fff;border-bottom-color:#fff;}
+
+main{padding:16px 14px 120px;max-width:600px;margin:0 auto;}
+.tab-content{display:none;}.tab-content.active{display:block;}
+
+/* labels / cards */
+.slabel{font-size:.68rem;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin:20px 0 8px 2px;}
+.slabel:first-child{margin-top:0;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px;}
+
+/* fields */
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:.75rem;font-weight:600;color:var(--muted);}
+.field input,.field select,.field textarea{font-family:var(--sans);font-size:1rem;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:13px 12px;outline:none;width:100%;-webkit-appearance:none;appearance:none;transition:border-color .15s,background .15s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);background:#fff;}
+.field textarea{resize:vertical;min-height:80px;line-height:1.6;}
+.select-wrap{position:relative;}
+.select-wrap::after{content:'▾';position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:.9rem;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+/* pills */
+.pills{display:flex;gap:8px;flex-wrap:wrap;}
+.pill{font-size:.8rem;font-weight:600;padding:9px 16px;border-radius:24px;border:1.5px solid var(--border);background:var(--bg);cursor:pointer;color:var(--muted);-webkit-tap-highlight-color:transparent;transition:all .15s;min-height:44px;display:flex;align-items:center;}
+.pill.active{border-color:var(--accent);background:var(--accent);color:#fff;}
+
+/* settings card */
+.settings-field{display:flex;flex-direction:column;gap:5px;}
+.settings-field label{font-size:.75rem;font-weight:600;color:var(--muted);}
+.settings-field input{font-family:var(--sans);font-size:.88rem;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:11px 12px;outline:none;width:100%;-webkit-appearance:none;}
+.settings-field input:focus{border-color:var(--info);background:#fff;}
+.settings-field input.error{border-color:var(--danger);}
+.settings-field input.ok{border-color:#16a34a;}
+
+/* status indicator */
+.conn-status{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:8px;font-size:.82rem;font-weight:600;margin-top:4px;}
+.conn-status.idle{background:#f3f4f6;color:#6b7280;}
+.conn-status.testing{background:#fef9c3;color:#854d0e;}
+.conn-status.ok{background:#dcfce7;color:#166534;}
+.conn-status.err{background:#fee2e2;color:#991b1b;}
+.dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* buttons */
+.btn{font-family:var(--sans);font-size:.95rem;font-weight:700;padding:0 20px;height:var(--tap);border-radius:10px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;-webkit-tap-highlight-color:transparent;transition:opacity .1s,transform .1s;width:100%;letter-spacing:.02em;}
+.btn:active{opacity:.8;transform:scale(.98);}
+.btn-green{background:var(--accent);color:#fff;}
+.btn-line{background:var(--line);color:#fff;}
+.btn-info{background:var(--info);color:#fff;}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--muted);}
+.btn-stack{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+
+/* fixed footer */
+.fixed-footer{position:fixed;bottom:0;left:0;right:0;background:rgba(242,239,233,.96);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--border);padding:12px 14px env(safe-area-inset-bottom,12px);z-index:90;}
+.footer-btn{font-family:var(--sans);font-size:1rem;font-weight:700;height:52px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--line);color:#fff;letter-spacing:.03em;-webkit-tap-highlight-color:transparent;transition:opacity .1s,transform .1s;}
+.footer-btn:active{opacity:.8;transform:scale(.98);}
+.footer-btn:disabled{background:#9ca3af;cursor:not-allowed;}
+
+/* toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#1a1814;color:#fff;font-size:.85rem;font-weight:600;padding:12px 22px;border-radius:24px;white-space:nowrap;opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;}
+.toast.show{opacity:1;}
+
+/* result card */
+#result-area{display:none;margin-top:20px;}
+#result-area.show{display:block;}
+.result-card{background:#fff;border:2px solid var(--line);border-radius:var(--r);padding:18px;}
+.result-card h3{font-size:.95rem;font-weight:700;color:#166534;margin-bottom:10px;}
+.result-preview{background:#f0fdf4;border-radius:8px;padding:14px;font-size:.78rem;line-height:1.9;white-space:pre-wrap;font-family:'Courier New',monospace;color:#14532d;word-break:break-all;}
+
+/* job list */
+.jobs-empty{text-align:center;padding:52px 16px;color:var(--muted);font-size:.88rem;line-height:1.8;}
+.job-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;}
+.job-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;}
+.job-name{font-weight:700;font-size:1rem;}
+.badge{font-size:.68rem;font-weight:700;padding:3px 10px;border-radius:12px;white-space:nowrap;}
+.b-est{background:#dbeafe;color:#1e40af;}.b-sch{background:#dcfce7;color:#166534;}.b-wip{background:#fef9c3;color:#854d0e;}.b-done{background:#f3f4f6;color:#4b5563;}
+.job-meta{font-size:.78rem;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+.job-work{font-size:.82rem;color:#444;margin-bottom:10px;}
+.job-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.jbtn{font-family:var(--sans);font-size:.78rem;font-weight:600;padding:8px 14px;min-height:36px;border-radius:7px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent;display:flex;align-items:center;gap:5px;}
+.jbtn.ln{background:var(--line);color:#fff;border-color:var(--line);}
+.jbtn.del{color:var(--danger);border-color:#f5b8b8;}
+
+/* guide */
+.guide-step{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:10px;}
+.guide-step h3{font-size:.92rem;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+.step-num{background:var(--accent);color:#fff;font-size:.72rem;font-weight:700;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.guide-step p,.guide-step li{font-size:.82rem;line-height:1.8;color:#444;}
+.guide-step ol,.guide-step ul{padding-left:18px;}
+.guide-step li{margin-bottom:4px;}
+.code-box{background:#1a1814;color:#a8e6a3;font-family:'Courier New',monospace;font-size:.75rem;padding:12px;border-radius:6px;margin-top:8px;word-break:break-all;line-height:1.7;}
+.tag{display:inline-block;background:#dbeafe;color:#1e40af;font-size:.7rem;font-weight:700;padding:1px 8px;border-radius:4px;margin:0 2px;}
+.warn-box{background:#fef9c3;border:1px solid #fbbf24;border-radius:8px;padding:12px;font-size:.8rem;line-height:1.7;color:#854d0e;margin-top:8px;}
+
+@media print{body *{visibility:hidden!important;}#print-sheet,#print-sheet *{visibility:visible!important;}#print-sheet{position:fixed!important;inset:0!important;padding:15mm 20mm!important;background:#fff!important;}}
+#print-sheet{display:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>⚡ 現場情報共有（自動送信版）</h1>
+    <small>渡部造園</small>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('input')">✏️ 入力</button>
+    <button class="tab-btn" onclick="switchTab('list')">📁 一覧</button>
+    <button class="tab-btn" onclick="switchTab('settings')">⚙️ 設定</button>
+    <button class="tab-btn" onclick="switchTab('guide')">📖 手順</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ===== INPUT ===== -->
+<div id="tab-input" class="tab-content active">
+
+  <div id="no-settings-warn" style="display:none;background:#fef9c3;border:1px solid #fbbf24;border-radius:8px;padding:12px;margin-bottom:14px;font-size:.82rem;color:#854d0e;line-height:1.7;">
+    ⚠️ <strong>送信設定が未完了です。</strong><br>「⚙️ 設定」タブでGoogle Apps ScriptのURLとLINE情報を入力してください。
+  </div>
+
+  <p class="slabel">顧客・現場</p>
+  <div class="card">
+    <div class="field"><label>顧客名</label><input type="text" id="f-client" placeholder="田中 太郎 様" autocomplete="off"></div>
+    <div class="field"><label>現場住所</label><input type="text" id="f-address" placeholder="今治市○○町1-2-3"></div>
+    <div class="field"><label>工事内容</label><input type="text" id="f-work" placeholder="庭木剪定・植栽工事"></div>
+  </div>
+
+  <p class="slabel">日程</p>
+  <div class="card">
+    <div class="field"><label>📅 見積もり日時</label><input type="datetime-local" id="f-estimate-date"></div>
+    <div class="row2">
+      <div class="field"><label>🔨 作業開始日</label><input type="date" id="f-start-date"></div>
+      <div class="field"><label>✅ 作業終了（予定）</label><input type="date" id="f-end-date"></div>
+    </div>
+    <div class="field"><label>⏰ 集合時間</label><input type="time" id="f-meettime" value="08:00"></div>
+  </div>
+
+  <p class="slabel">担当・金額</p>
+  <div class="card">
+    <div class="row2">
+      <div class="field"><label>担当者</label>
+        <div class="select-wrap"><select id="f-staff"><option value="">選択</option><option>父</option><option>聡志</option><option>二人</option><option>その他</option></select></div>
+      </div>
+      <div class="field"><label>見積金額（税込）</label><input type="number" id="f-price" placeholder="85000" inputmode="numeric"></div>
+    </div>
+    <div class="field"><label>ステータス</label>
+      <div class="pills" id="status-pills">
+        <button class="pill active" data-val="見積もり中" onclick="setPill(this)">見積もり中</button>
+        <button class="pill" data-val="着工予定" onclick="setPill(this)">着工予定</button>
+        <button class="pill" data-val="施工中" onclick="setPill(this)">施工中</button>
+        <button class="pill" data-val="完了" onclick="setPill(this)">完了</button>
+      </div>
+    </div>
+    <div class="field"><label>備考・持ち物・注意</label><textarea id="f-memo" placeholder="例：駐車は南側。チェーンソー持参。"></textarea></div>
+  </div>
+
+  <div id="result-area">
+    <p class="slabel">送信内容プレビュー</p>
+    <div class="result-card">
+      <h3>✅ LINEに送信されます</h3>
+      <div id="result-preview" class="result-preview"></div>
+      <div class="btn-stack" style="margin-top:12px;">
+        <button class="btn btn-ghost" onclick="printSheet()">🖨 現場票を印刷</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="height:16px"></div>
+</div>
+
+<!-- ===== LIST ===== -->
+<div id="tab-list" class="tab-content">
+  <p class="slabel" style="margin-top:0;">送信済み案件</p>
+  <div id="jobs-container"></div>
+</div>
+
+<!-- ===== SETTINGS ===== -->
+<div id="tab-settings" class="tab-content">
+  <p class="slabel" style="margin-top:0;">Google Apps Script</p>
+  <div class="card">
+    <div class="settings-field">
+      <label>GAS Web App URL</label>
+      <input type="url" id="s-gas-url" placeholder="https://script.google.com/macros/s/..." autocomplete="off" oninput="settingsChanged()">
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.7;">📖 手順タブのSTEP2でGoogleスプレッドシートとGASを設定後、ここにURLを貼り付けます。</p>
+  </div>
+
+  <p class="slabel">LINE送信先</p>
+  <div class="card">
+    <div class="settings-field">
+      <label>送信先ユーザーID（お父さんのLINE ID）</label>
+      <input type="text" id="s-user-id" placeholder="Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" oninput="settingsChanged()">
+    </div>
+    <p style="font-size:.75rem;color:var(--muted);line-height:1.7;">📖 手順タブのSTEP1-4でLINE公式アカウントから確認できます。</p>
+  </div>
+
+  <div id="conn-status" class="conn-status idle"><span class="dot"></span><span id="conn-msg">未設定</span></div>
+
+  <div class="btn-stack" style="margin-top:4px;">
+    <button class="btn btn-info" onclick="testConnection()">🔌 接続テスト</button>
+    <button class="btn btn-green" onclick="saveSettings()">💾 設定を保存</button>
+  </div>
+</div>
+
+<!-- ===== GUIDE ===== -->
+<div id="tab-guide" class="tab-content">
+  <p class="slabel" style="margin-top:0;">自動送信 設定手順</p>
+
+  <div class="guide-step">
+    <h3><span class="step-num">1</span>LINE公式アカウント — Messaging API有効化</h3>
+    <ol>
+      <li><a href="https://manager.line.biz/" target="_blank" style="color:var(--info);">manager.line.biz</a> にログイン</li>
+      <li>対象アカウントを選択 →「設定」→「Messaging API」</li>
+      <li>「Messaging APIを利用する」をタップ → プロバイダーを作成</li>
+      <li>有効化後、<strong>「チャネルアクセストークン（長期）」</strong>を発行してコピー</li>
+    </ol>
+    <div class="warn-box">⚠️ トークンは長い文字列です。メモ帳に保存しておいてください。</div>
+  </div>
+
+  <div class="guide-step">
+    <h3><span class="step-num">2</span>お父さんのユーザーIDを取得</h3>
+    <ol>
+      <li>お父さんにLINE公式アカウントを<strong>友だち追加</strong>してもらう</li>
+      <li>LINE Developersコンソール（<a href="https://developers.line.biz/" target="_blank" style="color:var(--info);">developers.line.biz</a>）にアクセス</li>
+      <li>チャネル →「Messaging API」→「Webhook設定」欄の下にある<strong>「友達」リスト</strong>からUserIDを確認</li>
+      <li>または：お父さんがLINE公式アカウントにメッセージを送ると、Webhookログにユーザーが表示されます</li>
+    </ol>
+    <div class="warn-box">💡 簡単な方法：LINEで「テスト」とメッセージを送ってもらいログを確認</div>
+  </div>
+
+  <div class="guide-step">
+    <h3><span class="step-num">3</span>Googleスプレッドシート + GASを作る</h3>
+    <ol>
+      <li><a href="https://sheets.google.com" target="_blank" style="color:var(--info);">Googleスプレッドシート</a>を新規作成（名前：渡部造園_現場管理）</li>
+      <li>「拡張機能」→「Apps Script」を開く</li>
+      <li>下のコードを<strong>全部コピー</strong>してApps Scriptに貼り付け</li>
+      <li><span class="tag">YOUR_TOKEN</span>と<span class="tag">YOUR_USER_ID</span>を自分のものに書き換える</li>
+      <li>「デプロイ」→「新しいデプロイ」→ 種類：ウェブアプリ → アクセス：全員 → デプロイ</li>
+      <li>表示されたURLを⚙️設定タブに貼り付ける</li>
+    </ol>
+    <div class="code-box" id="gas-code">// 渡部造園 現場情報共有 - Google Apps Script
+// ★ 以下2行を自分の値に書き換えてください
+const LINE_TOKEN   = 'YOUR_CHANNEL_ACCESS_TOKEN';
+const LINE_USER_ID = 'YOUR_FATHER_USER_ID';
+
+const SHEET_NAME = '現場情報';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    
+    // スプレッドシートに記録
+    const ss    = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet   = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) {
+      sheet = ss.insertSheet(SHEET_NAME);
+      sheet.appendRow(['送信日時','ステータス','顧客名','現場住所','工事内容',
+                       '見積日時','作業開始','作業終了','集合時間','担当者','見積金額','備考']);
+    }
+    sheet.appendRow([
+      new Date().toLocaleString('ja-JP'),
+      data.status, data.client, data.address, data.work,
+      data.estimateDate, data.startDate, data.endDate,
+      data.meettime, data.staff, data.price, data.memo
+    ]);
+
+    // LINEメッセージ送信
+    const msg = buildMessage(data);
+    sendLine(msg);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ok:false, error:err.message}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function buildMessage(d) {
+  const fmt = s => s || '—';
+  return [
+    '━━━━━━━━━━━━━━',
+    '【現場情報】渡部造園',
+    '━━━━━━━━━━━━━━',
+    `▶ 状態　　：${fmt(d.status)}`,
+    `▶ 顧客名　：${fmt(d.client)}`,
+    `▶ 現場　　：${fmt(d.address)}`,
+    `▶ 工事　　：${fmt(d.work)}`,
+    '──────────────',
+    `▶ 見積日時：${fmt(d.estimateDate)}`,
+    `▶ 作業開始：${fmt(d.startDate)}`,
+    `▶ 作業終了：${fmt(d.endDate)}`,
+    `▶ 集合　　：${fmt(d.meettime)}`,
+    '──────────────',
+    `▶ 担当　　：${fmt(d.staff)}`,
+    `▶ 見積金額：${fmt(d.price)}`,
+    '──────────────',
+    '▶ 備考',
+    fmt(d.memo),
+    '━━━━━━━━━━━━━━',
+  ].join('\n');
+}
+
+function sendLine(message) {
+  UrlFetchApp.fetch('https://api.line.me/v2/bot/message/push', {
+    method: 'post',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + LINE_TOKEN
+    },
+    payload: JSON.stringify({
+      to: LINE_USER_ID,
+      messages: [{ type: 'text', text: message }]
+    })
+  });
+}
+
+// 接続テスト用
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ok:true, msg:'GAS is running'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+    <button class="btn btn-ghost" style="margin-top:10px;font-size:.82rem;height:42px;" onclick="copyGasCode()">📋 コードをコピー</button>
+  </div>
+
+  <div class="guide-step">
+    <h3><span class="step-num">4</span>⚙️ 設定タブに入力して完了</h3>
+    <ol>
+      <li>⚙️設定タブを開く</li>
+      <li>GAS Web App URLを貼り付け</li>
+      <li>お父さんのLINEユーザーIDを入力</li>
+      <li>「接続テスト」→ ✅ が出れば完了！</li>
+    </ol>
+    <div class="warn-box">✅ 設定完了後は入力タブから「LINEに自動送信」ボタン1つで送れます。</div>
+  </div>
+
+  <div style="height:16px"></div>
+</div>
+
+</main>
+
+<!-- FIXED FOOTER -->
+<div class="fixed-footer" id="footer-bar">
+  <button class="footer-btn" id="send-btn" onclick="sendToLine()">⚡ LINEに自動送信</button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div id="print-sheet"></div>
+
+<script>
+/* ── state ── */
+let currentStatus = '見積もり中';
+let settings = { gasUrl:'', userId:'' };
+
+/* ── init ── */
+window.addEventListener('DOMContentLoaded', () => {
+  const s = JSON.parse(localStorage.getItem('zouen-settings') || '{}');
+  if (s.gasUrl) { document.getElementById('s-gas-url').value = s.gasUrl; settings.gasUrl = s.gasUrl; }
+  if (s.userId) { document.getElementById('s-user-id').value = s.userId; settings.userId = s.userId; }
+  checkSettingsWarn();
+});
+
+/* ── pill ── */
+function setPill(el) {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  currentStatus = el.dataset.val;
+}
+
+/* ── tabs ── */
+function switchTab(name) {
+  ['input','list','settings','guide'].forEach((t,i) => {
+    document.querySelectorAll('.tab-btn')[i].classList.toggle('active', t===name);
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+  });
+  document.getElementById('footer-bar').style.display = name==='input' ? 'block' : 'none';
+  if (name==='list') renderJobs();
+  window.scrollTo(0,0);
+}
+
+/* ── helpers ── */
+function v(id){ return (document.getElementById(id).value||'').trim(); }
+const DOW='日月火水木金土';
+function fmtDate(s){
+  if(!s) return '—';
+  const [y,m,d]=s.split('-');
+  return `${y}年${+m}月${+d}日（${DOW[new Date(s).getDay()]}）`;
+}
+function fmtDT(s){
+  if(!s) return '—';
+  const dt=new Date(s);
+  return `${dt.getFullYear()}年${dt.getMonth()+1}月${dt.getDate()}日（${DOW[dt.getDay()]}）${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+}
+function fmtPrice(n){ return n ? Number(n).toLocaleString()+'円（税込）' : '—'; }
+
+function buildMsg(d){
+  return [
+    '━━━━━━━━━━━━━━',
+    '【現場情報】渡部造園',
+    '━━━━━━━━━━━━━━',
+    `▶ 状態　　：${d.status||'—'}`,
+    `▶ 顧客名　：${d.client||'（未入力）'}`,
+    `▶ 現場　　：${d.address||'（未入力）'}`,
+    `▶ 工事　　：${d.work||'（未入力）'}`,
+    '──────────────',
+    `▶ 見積日時：${fmtDT(d.estimateDate)}`,
+    `▶ 作業開始：${fmtDate(d.startDate)}`,
+    `▶ 作業終了：${fmtDate(d.endDate)}`,
+    `▶ 集合　　：${d.meettime||'—'}`,
+    '──────────────',
+    `▶ 担当　　：${d.staff||'—'}`,
+    `▶ 見積金額：${fmtPrice(d.price)}`,
+    '──────────────',
+    '▶ 備考',
+    d.memo||'なし',
+    '━━━━━━━━━━━━━━',
+  ].join('\n');
+}
+
+/* ── send ── */
+async function sendToLine() {
+  if (!settings.gasUrl) {
+    showToast('⚙️ 設定タブでURLを入力してください');
+    switchTab('settings');
+    return;
+  }
+  const data = {
+    status: currentStatus,
+    client: v('f-client'), address: v('f-address'), work: v('f-work'),
+    estimateDate: v('f-estimate-date'), startDate: v('f-start-date'),
+    endDate: v('f-end-date'), meettime: v('f-meettime'),
+    staff: v('f-staff'), price: v('f-price'), memo: v('f-memo'),
+  };
+  if (!data.client && !data.address) {
+    showToast('⚠️ 顧客名か現場住所を入力してください');
+    return;
+  }
+
+  const btn = document.getElementById('send-btn');
+  btn.textContent = '送信中…';
+  btn.disabled = true;
+
+  // no-corsで送信（レスポンスは読めないが必ずGASに届く）
+  fetch(settings.gasUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(data),
+  });
+
+  // 送信リクエストを出した時点で成功扱い
+  saveJob(data);
+  document.getElementById('result-preview').textContent = buildMsg(data);
+  document.getElementById('result-area').classList.add('show');
+  document.getElementById('result-area').scrollIntoView({behavior:'smooth', block:'start'});
+  showToast('✅ LINEに送信しました！');
+  btn.textContent = '✅ 送信完了！';
+  setTimeout(() => { btn.textContent = '⚡ LINEに自動送信'; btn.disabled = false; }, 3000);
+}
+
+/* ── settings ── */
+function settingsChanged() {
+  const statusEl = document.getElementById('conn-status');
+  statusEl.className = 'conn-status idle';
+  document.getElementById('conn-msg').textContent = '未確認（「接続テスト」で確認してください）';
+}
+
+function saveSettings() {
+  settings.gasUrl = v('s-gas-url');
+  settings.userId = v('s-user-id');
+  localStorage.setItem('zouen-settings', JSON.stringify(settings));
+  showToast('💾 設定を保存しました');
+  checkSettingsWarn();
+}
+
+async function testConnection() {
+  const url = v('s-gas-url');
+  if (!url) { showToast('URLを入力してください'); return; }
+  const statusEl = document.getElementById('conn-status');
+  const msgEl    = document.getElementById('conn-msg');
+  statusEl.className = 'conn-status testing';
+  msgEl.textContent  = 'テスト中…';
+  try {
+    const res  = await fetch(url + '?test=1', { mode: 'cors' });
+    const json = await res.json();
+    if (json.ok) {
+      statusEl.className = 'conn-status ok';
+      msgEl.textContent  = '✅ 接続成功！GASが正常に動作しています';
+      settings.gasUrl    = url;
+      settings.userId    = v('s-user-id');
+      localStorage.setItem('zouen-settings', JSON.stringify(settings));
+      checkSettingsWarn();
+    } else {
+      throw new Error(json.error || '不明なエラー');
+    }
+  } catch(e) {
+    statusEl.className = 'conn-status err';
+    msgEl.textContent  = '❌ 接続失敗：' + e.message;
+  }
+}
+
+function checkSettingsWarn() {
+  document.getElementById('no-settings-warn').style.display =
+    settings.gasUrl ? 'none' : 'block';
+}
+
+/* ── toast ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ── print ── */
+function printSheet() {
+  const today = new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('print-sheet').innerHTML = `
+<style>body{font-family:'Noto Sans JP',sans-serif;}.ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #2e5c30;padding-bottom:8px;margin-bottom:18px;}.ph h2{font-size:1.2rem;font-weight:700;color:#2e5c30;}.ph small{font-size:.7rem;color:#888;}table{width:100%;border-collapse:collapse;font-size:.88rem;}th{background:#2e5c30;color:#fff;font-size:.75rem;padding:7px 10px;text-align:left;width:110px;}td{padding:9px 10px;border-bottom:1px solid #d6d0c8;vertical-align:top;}tr:nth-child(even) td{background:#f5f2ee;}.memo td{white-space:pre-wrap;line-height:1.7;}.badge{display:inline-block;padding:2px 10px;border-radius:10px;font-size:.75rem;font-weight:700;background:#dcfce7;color:#166534;}footer{margin-top:20px;font-size:.68rem;color:#aaa;text-align:right;}</style>
+<div class="ph"><h2>現場指示票 ／ 渡部造園</h2><small>発行日：${today}</small></div>
+<table>
+  <tr><th>ステータス</th><td><span class="badge">${currentStatus}</span></td></tr>
+  <tr><th>顧客名</th><td>${v('f-client')||'—'}</td></tr>
+  <tr><th>現場住所</th><td>${v('f-address')||'—'}</td></tr>
+  <tr><th>工事内容</th><td>${v('f-work')||'—'}</td></tr>
+  <tr><th>見積もり日時</th><td>${fmtDT(v('f-estimate-date'))}</td></tr>
+  <tr><th>作業開始日</th><td>${fmtDate(v('f-start-date'))}</td></tr>
+  <tr><th>作業終了（予定）</th><td>${fmtDate(v('f-end-date'))}</td></tr>
+  <tr><th>集合時間</th><td>${v('f-meettime')||'—'}</td></tr>
+  <tr><th>担当者</th><td>${v('f-staff')||'—'}</td></tr>
+  <tr><th>見積金額</th><td>${fmtPrice(v('f-price'))}</td></tr>
+  <tr class="memo"><th>備考・注意</th><td>${v('f-memo')||'なし'}</td></tr>
+</table>
+<footer>印刷：${new Date().toLocaleString('ja-JP')}</footer>`;
+  window.print();
+}
+
+/* ── jobs ── */
+function saveJob(data) {
+  const jobs = JSON.parse(localStorage.getItem('zouen-jobs')||'[]');
+  jobs.unshift({ id: Date.now(), ...data, savedAt: new Date().toISOString() });
+  localStorage.setItem('zouen-jobs', JSON.stringify(jobs));
+}
+
+const BADGE={'見積もり中':'b-est','着工予定':'b-sch','施工中':'b-wip','完了':'b-done'};
+function renderJobs() {
+  const jobs = JSON.parse(localStorage.getItem('zouen-jobs')||'[]');
+  const el   = document.getElementById('jobs-container');
+  if (!jobs.length) {
+    el.innerHTML='<div class="jobs-empty">送信済みの案件はまだありません</div>'; return;
+  }
+  el.innerHTML = jobs.map(j => `
+    <div class="job-card">
+      <div class="job-head">
+        <span class="job-name">${j.client||'（名前なし）'}</span>
+        <span class="badge ${BADGE[j.status]||''}">${j.status}</span>
+      </div>
+      <div class="job-meta"><span>📍 ${j.address||'—'}</span><span>👷 ${j.staff||'—'}</span></div>
+      <div class="job-meta"><span>📅 ${fmtDate(j.startDate)}</span></div>
+      <div class="job-work">${j.work||''}</div>
+      <div class="job-actions">
+        <button class="jbtn ln" onclick="resend(${j.id})">⚡ 再送信</button>
+        <button class="jbtn del" onclick="delJob(${j.id})">削除</button>
+      </div>
+    </div>`).join('');
+}
+
+function delJob(id) {
+  if (!confirm('削除しますか？')) return;
+  const jobs = JSON.parse(localStorage.getItem('zouen-jobs')||'[]').filter(j=>j.id!==id);
+  localStorage.setItem('zouen-jobs', JSON.stringify(jobs));
+  renderJobs();
+}
+
+async function resend(id) {
+  const j = JSON.parse(localStorage.getItem('zouen-jobs')||'[]').find(j=>j.id===id);
+  if (!j || !settings.gasUrl) { showToast('設定タブでURLを入力してください'); return; }
+  showToast('再送信中…');
+  try {
+    await fetch(settings.gasUrl, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(j), mode:'no-cors' });
+    showToast('✅ 再送信しました');
+  } catch(e) { showToast('❌ 再送信失敗'); }
+}
+
+/* ── GAS code copy ── */
+function copyGasCode() {
+  const code = document.getElementById('gas-code').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(() => showToast('✅ コードをコピーしました'));
+  }
+}
+</script>
+</body>
+</html>
